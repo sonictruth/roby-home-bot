@@ -16,11 +16,17 @@ const keyword = 'roby';
 const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\nType: roby for help.`;
 const lightCommandInterface = commandsV6;
 const lightBulbType = 'fullColor'; // rgbw white rgb fullColor
+const bridgeType = 'v6';
 let channel, light;
 
 process.on('unhandledRejection', error => {
-  console.error('ERROR: ', error);
-  process.exit(1);
+  console.log(error);
+  if (error.message && error.message.indexOf('no response timeout') >= 0) {
+    light = undefined;
+    sendMessage('Something went wrong, please retry.');
+  } else {
+    process.exit(1);
+  }
 });
 
 const rtm = new RTMClient(token,
@@ -41,24 +47,25 @@ const web = new WebClient(token,
   const connectionInfo = await rtm.start();
   const res = await web.channels.list()
   channel = res.channels.find(c => c.is_member);
-  const bridges = await discoverBridges({ type: 'all', address: broadcastIp });
-  const firstBridge = bridges.find(bridge => bridge);
 
   sendMessage(welcomeMsg);
 
+  console.log('Connection: ', connectionInfo.team.name);
+  await initLight();
+})();
+
+const initLight = async () => {
+  const bridges = await discoverBridges({ type: 'all', address: broadcastIp });
+  const firstBridge = bridges.find(bridge => bridge);
   light = new MilightController({
     ip: firstBridge ? firstBridge.ip : '255.255.255.255',
-    type: firstBridge ? firstBridge.type : 'v6'
+    type: firstBridge ? firstBridge.type : bridgeType
   });
   firstBridge ?
     sendMessage('Found bridge: ' + Object.values(firstBridge).join(' / ')) :
-    sendMessage('No light bridges found using broadcast');
-
-  console.log('Connection: ', connectionInfo.team.name);
-  console.log('Bridges: ', firstBridge.ip, firstBridge.type);
-  console.log('Light: ', light.ip);
-
-})();
+    sendMessage('No light bridges found.');
+  return light;
+}
 
 rtm.on('message', async (message) => {
   if (message.type === 'message' && (message.text || message.attachments.length > 0)) {
@@ -98,13 +105,15 @@ const commands = {
     }
     zone = parseInt(zone);
     const lightBulb = lightCommandInterface[lightBulbType];
+    if (light === undefined) {
+      await initLight();
+    }
     if (colors[command]) {
       const rgb = colors[command];
       light.sendCommands(
         lightBulb.on(zone),
         lightBulb.rgb(zone, rgb[0], rgb[1], rgb[2])
       )
-      return ':rainbow:';
     }
     switch (command) {
       case 'on':
