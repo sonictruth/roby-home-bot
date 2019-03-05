@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/home/pi/roby-home-bot
-ExecStart=/usr/bin/npm start
+ExecStart=/home/pi/.nvm/versions/node/v8.11.4/bin/npm start
 Restart=on-failure
 User=pi
 
