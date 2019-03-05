@@ -1,9 +1,24 @@
 const fs = require('fs');
+const { MilightController, discoverBridges, helper, commandsV6 } = require('node-milight-promise');
 const { RTMClient, WebClient, LogLevel } = require('@slack/client');
 
 const token = fs.readFileSync('./token.key').toString();
 const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
+const keyword = 'milight';
+
+const welcomeMsg = `Hello, I'm Roby !\n` +
+  'Type: ```milight on/off/red/blue/disco``` to change the lights.';
+
+let channel;
+
+/*
+const light = new MilightController({
+  ip: "255.255.255.255",
+  type: 'v6'
+}),
+  zone = 1;
+*/
 
 const rtm = new RTMClient(token,
   {
@@ -14,39 +29,43 @@ const rtm = new RTMClient(token,
   }
 );
 
-rtm.start();
+const web = new WebClient(token,
+  { logLevel }
+);
 
-const web = new WebClient(token, { logLevel });
 
-rtm.on('message', (message) => {
-  const keyword = 'milight'
+// Start bot
+(async () => {
+  const bridges = await discoverBridges({type: 'all'});
+  const connectionInfo = await rtm.start();
+  const res = await web.channels.list()
 
+  channel = res.channels.find(c => c.is_member);
+  sendMessage(welcomeMsg);
+})();
+
+rtm.on('message', async (message) => {
   if (message.type === 'message' && (message.text || message.attachments.length > 0)) {
-
     let messageText = message.text ? message.text : message.attachments[0].pretext;
-    
     messageText = messageText.toLowerCase();
     if (messageText.indexOf(keyword) === 0) {
       const command = messageText.replace(keyword, '').trim();
-      console.log('Lights: ', command);
+      const response = await processCommand(command);
+      sendMessage(response);
     }
   }
 });
 
-(async () => {
-  // Load the current channels list asynchronously
-  const res = await web.channels.list()
-
-  // Take any channel for which the bot is a member
-  const channel = res.channels.find(c => c.is_member);
-
+const sendMessage = async (message) => {
   if (channel) {
-    let welcomeMsg = `Hello, I\'m Roby, Welcome to ${channel.name} !\n`;
-    welcomeMsg += `Type \`\`\`milight on/off/red/blue/disco\`\`\` to change the lights.`;
-
-    const msg = await rtm.sendMessage(welcomeMsg, channel.id);
-    console.log(`Message sent to channel ${channel.name} with ts:${msg.ts}`);
+    const msg = await rtm.sendMessage(message, channel.id);
+    console.log(`Sent message to ${channel.name} with ts:${msg.ts}`);
   } else {
     console.log('This bot does not belong to any channel, invite it to at least one and try again');
   }
-})();
+}
+
+const processCommand = async (command) => {
+  console.log('Executing', command);
+  return `${command} done.`;
+}
