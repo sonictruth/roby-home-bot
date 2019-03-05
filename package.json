@@ -7,7 +7,10 @@
     "start": "forever index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Alexandru Constantin",
+  "engines": {
+    "node": ">=8.0.0 <11.0.0"
+  },
   "license": "ISC",
   "dependencies": {
     "@slack/client": "^4.10.0",

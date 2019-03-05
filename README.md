@@ -2,4 +2,4 @@
 
 Slack bot to control milights
 
-Google Assistant -> Ifttt -> Slack -> RobyHomeBot -> Milights
+Google Assistant -> IFTTT -> Slack -> RobyHomeBot -> Milights
