@@ -17,6 +17,7 @@
     "@slack/events-api": "^2.2.0",
     "@slack/interactive-messages": "^1.1.0",
     "forever": "^0.15.3",
+    "node-emoji": "^1.10.0",
     "node-milight-promise": "^0.3.2"
   }
 }

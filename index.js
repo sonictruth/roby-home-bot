@@ -1,5 +1,6 @@
 const fs = require('fs');
 const { MilightController, discoverBridges, helper, commandsV6 } = require('node-milight-promise');
+const emoji = require('node-emoji')
 const { RTMClient, WebClient, LogLevel } = require('@slack/client');
 
 const token = fs.readFileSync('./token.key').toString();
@@ -7,7 +8,7 @@ const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
 const keyword = 'milight';
 
-const welcomeMsg = `Hello, I'm Roby !\n` +
+const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\n` +
   'Type: ```milight on/off/red/blue/disco``` to change the lights.';
 
 let channel;
@@ -64,7 +65,7 @@ rtm.on('message', async (message) => {
 
 const sendMessage = async (message) => {
   if (channel) {
-    const msg = await rtm.sendMessage(message, channel.id);
+    const msg = await rtm.sendMessage(emoji.emojify(message), channel.id);
     console.log(`Sent message to ${channel.name} with ts:${msg.ts}`);
   } else {
     console.log('This bot does not belong to any channel, invite it to at least one and try again');
