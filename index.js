@@ -6,10 +6,10 @@ const { RTMClient, WebClient, LogLevel } = require('@slack/client');
 const token = fs.readFileSync('./token.key').toString();
 const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
-const keyword = 'milight';
+const keyword = 'roby';
 
 const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\n` +
-  'Type: ```milight on/off/red/blue/disco``` to change the lights.';
+  'Type: ```' + keyword + ' milight on/off/red/blue/disco``` to change the lights.';
 
 let channel;
 
