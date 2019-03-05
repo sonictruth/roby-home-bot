@@ -12,6 +12,12 @@ const welcomeMsg = `Hello, I'm Roby !\n` +
 
 let channel;
 
+process.on('unhandledRejection', error => {
+  console.error('unhandledRejection', error);
+  process.exit(1);
+});
+
+
 /*
 const light = new MilightController({
   ip: "255.255.255.255",
