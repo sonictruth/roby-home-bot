@@ -7,25 +7,14 @@ const token = fs.readFileSync('./token.key').toString();
 const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
 const keyword = 'roby';
+const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\nType: roby for help.`;
 
-const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\n` +
-  'Type: ```' + keyword + ' milight on/off/red/blue/disco``` to change the lights.';
-
-let channel;
+let channel, light;
 
 process.on('unhandledRejection', error => {
   console.error('unhandledRejection', error);
   process.exit(1);
 });
-
-
-/*
-const light = new MilightController({
-  ip: "255.255.255.255",
-  type: 'v6'
-}),
-  zone = 1;
-*/
 
 const rtm = new RTMClient(token,
   {
@@ -40,15 +29,26 @@ const web = new WebClient(token,
   { logLevel }
 );
 
-
 // Start bot
 (async () => {
-  const bridges = await discoverBridges({type: 'all'});
   const connectionInfo = await rtm.start();
   const res = await web.channels.list()
-
   channel = res.channels.find(c => c.is_member);
+  const bridges = await discoverBridges({ type: 'all' });
+  const firstBridge = bridges.find( bridge =>  bridge);
+
+  light = new MilightController({
+    ip: firstBridge.ip,
+    type: firstBridge.type
+  }),
+  console.log('Connection: ', connectionInfo.team.name);
+  console.log('Bridges: ', firstBridge.ip, firstBridge.type);
+  console.log('Light: ', light.ip);
+
   sendMessage(welcomeMsg);
+  firstBridge.length === 0 ?
+    sendMessage('No light bridges found') :
+    sendMessage('Found bridge: ' + Object.values(firstBridge).join(' / ') );
 })();
 
 rtm.on('message', async (message) => {
@@ -72,7 +72,21 @@ const sendMessage = async (message) => {
   }
 }
 
-const processCommand = async (command) => {
-  console.log('Executing', command);
-  return `${command} done.`;
+const processCommand = async (commandAndParameters) => {
+  console.log('Executing', commandAndParameters);
+  const commandAndParametersArray = commandAndParameters.trim().split(' ');
+  if(commandAndParametersArray[0] !== '' && commands[commandAndParametersArray[0]] ){
+    return commands[commandAndParametersArray[0]].apply(this, commandAndParametersArray.slice(1));
+  } else {
+    return `[${commandAndParameters}] not found. Availible commends: ` + Object.keys(commands);
+  }
+}
+
+const commands = {
+  milight: async (zone, parameter, extra) => {
+    zone = parseInt(zone);
+    const cmd = commandsV6.rgbw[parameter](zone, extra);
+    const result  = await light.sendCommands(cmd);
+    return `Milight ${parameter}`;
+  }
 }
