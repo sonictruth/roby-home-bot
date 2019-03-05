@@ -90,7 +90,7 @@ const processCommand = async (commandAndParameters) => {
 const commands = {
   milight: async (zone, command, effect) => {
     if (!zone || !command) {
-      return 'Try roby milight [zone: 0...3] [command: on off dim full movie [color]]'
+      return 'Try roby milight [zone: 0...3] [command: on off dim full movie disco fire [color]]'
     }
     zone = parseInt(zone);
     const lightBulb = lightCommandInterface[lightBulbType];
