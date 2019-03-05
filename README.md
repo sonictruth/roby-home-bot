@@ -15,9 +15,6 @@ Say a phrase with a text ingredient
 What do you want the Assistant to say in response?
 Sure thing boss. The lights will be $ .
 
-Post to channel
+Post to channel: general
 
-Which channel?
-
-Message
-roby milight {{TextField}}
+Message: roby milight {{TextField}}
