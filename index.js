@@ -3,8 +3,12 @@ const colors = require('color-name');
 const { MilightController, discoverBridges, helper, commandsV6 } = require('node-milight-promise');
 const emoji = require('node-emoji')
 const { RTMClient, WebClient, LogLevel } = require('@slack/client');
-
-const token = fs.readFileSync('./token.key').toString();
+let token;
+try {
+  token = fs.readFileSync('./token.key').toString().trim();
+} catch (e) {
+  console.log('Please create a token.key file containing the Slack token.');
+}
 const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
 const broadcastIp = '10.1.1.255';
