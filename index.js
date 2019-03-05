@@ -1,4 +1,5 @@
 const fs = require('fs');
+const colors = require('color-name');
 const { MilightController, discoverBridges, helper, commandsV6 } = require('node-milight-promise');
 const emoji = require('node-emoji')
 const { RTMClient, WebClient, LogLevel } = require('@slack/client');
@@ -6,13 +7,15 @@ const { RTMClient, WebClient, LogLevel } = require('@slack/client');
 const token = fs.readFileSync('./token.key').toString();
 const logLevel = LogLevel.ERROR;
 const timeOut = 20000;
+const broadcastIp = '10.1.1.255';
 const keyword = 'roby';
 const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\nType: roby for help.`;
-
+const lightCommandInterface = commandsV6;
+const lightBulbType = 'fullColor'; // rgbw white rgb fullColor
 let channel, light;
 
 process.on('unhandledRejection', error => {
-  console.error('unhandledRejection', error);
+  console.error('ERROR: ', error);
   process.exit(1);
 });
 
@@ -34,21 +37,23 @@ const web = new WebClient(token,
   const connectionInfo = await rtm.start();
   const res = await web.channels.list()
   channel = res.channels.find(c => c.is_member);
-  const bridges = await discoverBridges({ type: 'all' });
-  const firstBridge = bridges.find( bridge =>  bridge);
+  const bridges = await discoverBridges({ type: 'all', address: broadcastIp });
+  const firstBridge = bridges.find(bridge => bridge);
+
+  sendMessage(welcomeMsg);
 
   light = new MilightController({
-    ip: firstBridge.ip,
-    type: firstBridge.type
-  }),
+    ip: firstBridge ? firstBridge.ip : '255.255.255.255',
+    type: firstBridge ? firstBridge.type : 'v6'
+  });
+  firstBridge ?
+    sendMessage('Found bridge: ' + Object.values(firstBridge).join(' / ')) :
+    sendMessage('No light bridges found using broadcast');
+
   console.log('Connection: ', connectionInfo.team.name);
   console.log('Bridges: ', firstBridge.ip, firstBridge.type);
   console.log('Light: ', light.ip);
 
-  sendMessage(welcomeMsg);
-  firstBridge.length === 0 ?
-    sendMessage('No light bridges found') :
-    sendMessage('Found bridge: ' + Object.values(firstBridge).join(' / ') );
 })();
 
 rtm.on('message', async (message) => {
@@ -75,18 +80,71 @@ const sendMessage = async (message) => {
 const processCommand = async (commandAndParameters) => {
   console.log('Executing', commandAndParameters);
   const commandAndParametersArray = commandAndParameters.trim().split(' ');
-  if(commandAndParametersArray[0] !== '' && commands[commandAndParametersArray[0]] ){
+  if (commandAndParametersArray[0] !== '' && commands[commandAndParametersArray[0]]) {
     return commands[commandAndParametersArray[0]].apply(this, commandAndParametersArray.slice(1));
   } else {
-    return `[${commandAndParameters}] not found. Availible commends: ` + Object.keys(commands);
+    return `Try roby [command]. Availible commands: ` + Object.keys(commands);
   }
 }
 
 const commands = {
-  milight: async (zone, parameter, extra) => {
+  milight: async (zone, command, effect) => {
+    if (!zone || !command) {
+      return 'Try roby milight [zone: 0...3] [command: on off dim full movie [color]]'
+    }
     zone = parseInt(zone);
-    const cmd = commandsV6.rgbw[parameter](zone, extra);
-    const result  = await light.sendCommands(cmd);
-    return `Milight ${parameter}`;
+    const lightBulb = lightCommandInterface[lightBulbType];
+    if (colors[command]) {
+      const rgb = colors[command];
+      light.sendCommands(
+        lightBulb.on(zone),
+        lightBulb.rgb(zone, rgb[0], rgb[1], rgb[2])
+      )
+      return ':rainbow:';
+    }
+    switch (command) {
+      case 'on':
+        light.sendCommands(lightBulb.on(zone))
+        break;
+      case 'off':
+        light.sendCommands(lightBulb.off(zone))
+        break;
+      case 'movie':
+        light.sendCommands(
+          lightBulb.on(zone),
+          lightBulb.whiteMode(zone),
+          lightBulb.brightness(zone, 20)
+        )
+        break;
+      case 'dim':
+        light.sendCommands(
+          lightBulb.on(zone),
+          lightBulb.whiteMode(zone),
+          lightBulb.brightness(zone, 50)
+        )
+        break;
+      case 'full':
+        light.sendCommands(
+          lightBulb.on(zone),
+          lightBulb.whiteMode(zone),
+          lightBulb.brightness(zone, 100)
+        )
+        break;
+      case 'disco':
+        light.sendCommands(
+          lightBulb.on(zone),
+          lightBulb.brightness(zone, 100),
+          lightBulb.effectMode(zone, 6)
+        )
+        break;
+      case 'fire':
+        light.sendCommands(
+          lightBulb.on(zone),
+          lightBulb.brightness(zone, 100),
+          lightBulb.effectMode(zone, 1)
+        )
+        break;
+    }
+    return `:high_brightness: Milight ${zone} ${command} :high_brightness:`;
   }
 }
