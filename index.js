@@ -16,12 +16,14 @@ const keyword = 'roby';
 const welcomeMsg = `Hello, I'm Roby :traffic_light: :robot_face: !\nType: roby for help.`;
 const lightCommandInterface = commandsV6;
 const lightBulbType = 'fullColor'; // rgbw white rgb fullColor
-const bridgeType = 'v6';
+const defaultBridgeType = 'v6';
+const defaultIp = '255.255.255.255';
 let channel, light;
 
 process.on('unhandledRejection', error => {
   console.log(error);
   if (error.message && error.message.indexOf('no response timeout') >= 0) {
+    light._close();
     light = undefined;
     sendMessage('Something went wrong, please retry.');
   } else {
@@ -49,18 +51,19 @@ const web = new WebClient(token,
   channel = res.channels.find(c => c.is_member);
 
   sendMessage(welcomeMsg);
-
-  console.log('Connection: ', connectionInfo.team.name);
   await initLight();
+  console.log('Connection: ', connectionInfo.team.name);
 })();
 
 const initLight = async () => {
   const bridges = await discoverBridges({ type: 'all', address: broadcastIp });
   const firstBridge = bridges.find(bridge => bridge);
+
   light = new MilightController({
-    ip: firstBridge ? firstBridge.ip : '255.255.255.255',
-    type: firstBridge ? firstBridge.type : bridgeType
+    ip: firstBridge ? firstBridge.ip : defaultIp,
+    type: firstBridge ? firstBridge.type : defaultBridgeType
   });
+
   firstBridge ?
     sendMessage('Found bridge: ' + Object.values(firstBridge).join(' / ')) :
     sendMessage('No light bridges found.');
