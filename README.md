@@ -17,4 +17,4 @@ Sure thing boss. The lights will be $ .
 
 Post to channel: general
 
-Message: roby milight {{TextField}}
+Message: roby milight 0 {{TextField}}
